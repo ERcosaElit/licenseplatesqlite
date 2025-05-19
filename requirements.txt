@@ -1,0 +1,7 @@
+paddlepaddle
+paddleocr
+psycopg2-binary
+pyqt5
+torch
+ultralytics
+faker
