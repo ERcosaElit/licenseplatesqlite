@@ -34,44 +34,42 @@ class VideoLicensePlateGUI(QMainWindow):
         self.setup_ui()
 
     def setup_ui(self):
-        """Setup the user interface components"""
         self.setWindowTitle("Rendszám Felismerő")
-        # self.setWindowIcon(QIcon('C:\\PythonProject\\imagines.png'))
         self.setGeometry(100, 100, 1280, 720)
 
-        # Main widget and layout
+        # Ablak és elrendezése
         main_widget = QWidget()
         main_layout = QVBoxLayout()
         main_widget.setLayout(main_layout)
         self.setCentralWidget(main_widget)
 
-        # Top area for file selection and controls
+        # Teteje
         top_layout = QHBoxLayout()
 
-        # Button to browse for video files
+        # Videó tallózó gomb
         self.browse_button = QPushButton("Videó betallózása")
         self.browse_button.setMinimumWidth(150)
         self.browse_button.clicked.connect(self.browse_video)
         top_layout.addWidget(self.browse_button)
 
-        # Button to browse for image files
+        # Kép tallózó gomb
         self.browse_image_button = QPushButton("Kép betallózása")
         self.browse_image_button.setMinimumWidth(150)
         self.browse_image_button.clicked.connect(self.browse_image)
         top_layout.addWidget(self.browse_image_button)
 
-        # Button for manual license plate input
+        # Kézi bevitel gomb
         self.manual_button = QPushButton("Kézi rendszám bevitel")
         self.manual_button.setMinimumWidth(150)
         self.manual_button.clicked.connect(self.open_manual_dialog)
         top_layout.addWidget(self.manual_button)
 
-        # File path display
+        # Kezdő felirat
         self.file_path_label = QLabel("Nincs kiválasztott fájl")
         self.file_path_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         top_layout.addWidget(self.file_path_label)
 
-        # Play/Pause button
+        # Lejátszó gomb
         self.play_button = QPushButton("Lejátszás")
         self.play_button.setMinimumWidth(150)
         self.play_button.clicked.connect(self.toggle_play)
@@ -80,24 +78,24 @@ class VideoLicensePlateGUI(QMainWindow):
 
         main_layout.addLayout(top_layout)
 
-        # Video display area
+        # Video lejátszó
         self.video_label = QLabel()
         self.video_label.setAlignment(Qt.AlignCenter)
         self.video_label.setStyleSheet("background-color: black;")
         self.video_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         main_layout.addWidget(self.video_label)
 
-        # Status bar for additional information
+        # Státusz
         self.statusBar().showMessage("Kész a betöltésre")
 
     def open_manual_dialog(self):
-        """Kézi rendszám beviteli ablak megnyitása"""
+        #Kézi rendszám beviteli ablak megnyitása
         from manual import ManualLicensePlateDialog  # Relatív importálás a jelenlegi mappából
         dialog = ManualLicensePlateDialog(self)
         dialog.exec_()
 
     def browse_video(self):
-        """Open file dialog to select a video file"""
+        #Videó megnyitása
         file_path, _ = QFileDialog.getOpenFileName(
             self, "Videó kiválasztása", "", "Video Files (*.mp4 *.avi *.mkv *.mov)"
         )
@@ -127,16 +125,16 @@ class VideoLicensePlateGUI(QMainWindow):
             self.statusBar().showMessage(f"Kép betöltve: {os.path.basename(file_path)}")
             self.file_path_label.setText(os.path.basename(file_path))
 
-            # Load and display original image
+            # Kép betöltés
             image = cv2.imread(file_path)
             if image is not None:
-                # Store original image
+
                 self.current_image = image
 
-                # Display image
+
                 self.display_image(image)
 
-                # Process image in a separate thread
+                # Képfeldolgozása
                 if self.image_processing_thread is not None and self.image_processing_thread.isRunning():
                     self.image_processing_thread.terminate()
                     self.image_processing_thread.wait()
@@ -149,7 +147,7 @@ class VideoLicensePlateGUI(QMainWindow):
                 self.statusBar().showMessage("Hiba a kép betöltésekor")
 
     def handle_processed_image(self, processed_image):
-        """Handle the processed image from the thread"""
+
         if processed_image is not None:
             self.current_image = processed_image
             self.display_image(processed_image)
@@ -160,18 +158,16 @@ class VideoLicensePlateGUI(QMainWindow):
         if image is None:
             return
 
-        # Convert OpenCV BGR image to RGB for Qt
+        # opencv BGR képet csinál de a QT-nek RGB kell
         rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        # Convert to QImage
+
         height, width, channel = rgb_image.shape
         bytes_per_line = 3 * width
         q_img = QImage(rgb_image.data, width, height, bytes_per_line, QImage.Format_RGB888)
 
-        # Convert to QPixmap
         pixmap = QPixmap.fromImage(q_img)
 
-        # Scale pixmap to fit the label while maintaining aspect ratio
         scaled_pixmap = pixmap.scaled(
             self.video_label.width(),
             self.video_label.height(),
@@ -179,49 +175,47 @@ class VideoLicensePlateGUI(QMainWindow):
             Qt.SmoothTransformation
         )
 
-        # Display the scaled image
+
         self.video_label.setPixmap(scaled_pixmap)
         self.video_label.setAlignment(Qt.AlignCenter)
 
     def toggle_play(self):
-        """Toggle video playback"""
+
         if self.video_processor.video_thread and self.video_processor.video_thread.isRunning():
             # Stop playback
             self.video_processor.stop_processing()
             self.play_button.setText("Lejátszás")
             self.statusBar().showMessage("Lejátszás leállítva")
         else:
-            # Start playback
+
             if self.video_file_path:
-                # Reload the video to start from the beginning
+
                 self.video_processor.load_video(self.video_file_path)
 
-                # Start processing
+
                 video_thread = self.video_processor.start_processing()
                 video_thread.frame_ready.connect(self.display_frame)
                 self.play_button.setText("Szünet")
                 self.statusBar().showMessage("Lejátszás folyamatban...")
 
     def display_frame(self, frame):
-        """Display the processed frame"""
+
         if frame is None:
             return
 
-        # Store current frame for resize events
         self.current_image = frame
 
-        # Convert OpenCV BGR image to RGB for Qt
+
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        # Convert to QImage
+
         height, width, channel = rgb_frame.shape
         bytes_per_line = 3 * width
         q_img = QImage(rgb_frame.data, width, height, bytes_per_line, QImage.Format_RGB888)
 
-        # Convert to QPixmap and display
         pixmap = QPixmap.fromImage(q_img)
 
-        # Scale pixmap to fit the label while maintaining aspect ratio
+
         scaled_pixmap = pixmap.scaled(
             self.video_label.width(),
             self.video_label.height(),
@@ -232,7 +226,7 @@ class VideoLicensePlateGUI(QMainWindow):
         self.video_label.setPixmap(scaled_pixmap)
 
     def resizeEvent(self, event):
-        """Handle window resize event to properly scale the image"""
+        #méretezés
         if self.current_image is not None:
             self.display_image(self.current_image)
 
@@ -240,7 +234,7 @@ class VideoLicensePlateGUI(QMainWindow):
         super().resizeEvent(event)
 
     def closeEvent(self, event):
-        """Handle window close event"""
+
         # Stop all threads before closing
         if self.image_processing_thread is not None and self.image_processing_thread.isRunning():
             self.image_processing_thread.terminate()
