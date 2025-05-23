@@ -20,7 +20,7 @@ class VideoThread(QThread):
         super().__init__()
         self.processor = processor
         self.running = False
-        # Increase queue sizes for smoother operation
+
         self.frame_queue = Queue(maxsize=60)
         self.processed_queue = Queue(maxsize=60)
 
@@ -28,7 +28,7 @@ class VideoThread(QThread):
         self.running = True
         self.processor.ocr_counter = 0
 
-        # Create separate threads for reading and processing
+
         read_thread = Thread(target=self.read_frames)
         read_thread.daemon = True
         read_thread.start()
@@ -37,27 +37,27 @@ class VideoThread(QThread):
         processing_thread.daemon = True
         processing_thread.start()
 
-        # Display thread (current thread)
+
         while self.running:
             if not self.processed_queue.empty():
                 processed_frame = self.processed_queue.get()
                 self.frame_ready.emit(processed_frame)
-                self.msleep(1)  # Small delay to prevent CPU hogging
+                self.msleep(1)
             else:
-                self.msleep(1)  # Prevent CPU hogging
+                self.msleep(1)
 
     def read_frames(self):
-        # Get video FPS
+
         fps = self.processor.video.get(cv2.CAP_PROP_FPS)
-        delay = 1.0 / fps if fps > 0 else 0.03  # Convert to seconds
+        delay = 1.0 / fps if fps > 0 else 0.03
         last_read_time = time.time()
 
         while self.running and self.processor.video is not None:
-            # Throttle frame reading to match video FPS
+
             current_time = time.time()
             elapsed = current_time - last_read_time
             if elapsed < delay:
-                time.sleep(0.001)  # Small sleep to prevent CPU hogging
+                time.sleep(0.001)
                 continue
 
             last_read_time = current_time
@@ -65,11 +65,11 @@ class VideoThread(QThread):
             if not ret:
                 break
 
-            # Add frame to queue if not full
+
             if not self.frame_queue.full():
                 self.frame_queue.put(frame)
             else:
-                # Skip frame if queue is full
+
                 continue
 
     def process_frames(self):
@@ -84,10 +84,10 @@ class VideoThread(QThread):
                 break
 
             frame_count += 1
-            # Only do OCR every 15 frames instead of every 10
+
             do_ocr = (frame_count % 15 == 0)
 
-            # Process frame
+
             processed_frame = self.processor.process_frame_with_frame(frame, do_ocr)
             if processed_frame is not None and not self.processed_queue.full():
                 self.processed_queue.put(processed_frame)
@@ -111,7 +111,7 @@ class VideoProcessor:
         self.video_thread = None
         self.vehicle_db = VehicleDatabase()
         self.vehicle_data = None
-        # Store recognized license plates to avoid redundant processing
+
         self.recognized_plates = {}
 
         # Load font
@@ -136,10 +136,7 @@ class VideoProcessor:
         self.initialize()
 
     def format_license_plate(self, text):
-        """
-        Rendszámtábla szövegének formázása:
-        Ha a formátum XXXX-000, akkor XX-XX-000 formátumra alakítja
-        """
+
         # Ellenőrizzük, hogy a szöveg 4 betű, kötőjel, majd 3 szám formátumú-e
         if re.match(r'^[A-Za-z]{4}-[0-9]{3}$', text):
             # XX-XX-000 formátumra alakítjuk
@@ -147,50 +144,46 @@ class VideoProcessor:
         return text
 
     def draw_text_with_unicode(self, img, text, position, font_size=20, color=(255, 255, 255)):
-        """Ékezetes szöveget rajzol a képre PIL segítségével"""
-        # Create a PIL Image from the OpenCV image
+        #Ékezetes szöveget rajzol a képre PIL segítségével
         pil_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
         draw = ImageDraw.Draw(pil_img)
 
-        # Select font
         font = self.large_font if font_size > 25 else self.font
 
-        # Draw text
         draw.text(position, text, font=font, fill=color)
 
-        # Convert back to OpenCV format
         return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
     def draw_text_with_background(self, img, text, position, font_size=20, text_color=(255, 255, 255),
                                   bg_color=(0, 0, 0), alpha=0.6):
-        """Szöveget rajzol a képre átlátszó háttérrel"""
-        # Create a copy for the background
+        #Szöveget rajzol a képre átlátszó háttérrel
+
         overlay = img.copy()
 
-        # Determine text size for proper background sizing
+        # Megfelelő méretű háttér rajzolása
         pil_img_temp = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
         draw_temp = ImageDraw.Draw(pil_img_temp)
         font = self.large_font if font_size > 25 else self.font
 
-        # Get text size
+
         try:
             text_width, text_height = draw_temp.textbbox((0, 0), text, font=font)[2:]
         except AttributeError:
-            # Fallback for older PIL versions
+
             text_width, text_height = draw_temp.textsize(text, font=font)
 
-        # Draw background
+        # Háttér
         x, y = position
         cv2.rectangle(overlay, (x - 5, y - 5), (x + text_width + 5, y + text_height + 5), bg_color, -1)
 
-        # Apply transparent background
+        # Átlátszóvá tétel
         img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
 
-        # Draw text
+        # Szöveg
         return self.draw_text_with_unicode(img, text, position, font_size, text_color)
 
     def initialize(self):
-        # Initialize PaddleOCR with optimized settings
+
         gpu_available = self.device == 'cuda'
         try:
             self.reader = PaddleOCR(
@@ -198,7 +191,7 @@ class VideoProcessor:
                 lang='en',
                 use_gpu=gpu_available,
                 enable_mkldnn=True,
-                # Add these parameters for faster processing
+
                 rec_batch_num=6,
                 det_db_thresh=0.3,
                 det_db_box_thresh=0.5
@@ -208,11 +201,10 @@ class VideoProcessor:
             print(f"Error initializing PaddleOCR: {e}")
             self.reader = None
 
-        # Initialize YOLO
+        # YOLO
         try:
             from ultralytics import YOLO
             self.yolo_model = YOLO(self.yolo_model_path)
-            # Use half precision for faster inference if using GPU
             if self.device == 'cuda':
                 self.yolo_model.to(self.device).half()
             else:
@@ -229,7 +221,6 @@ class VideoProcessor:
             self.video = cv2.VideoCapture(file_path)
             success = self.video.isOpened()
             if success:
-                # Increase buffer size for smoother reading
                 self.video.set(cv2.CAP_PROP_BUFFERSIZE, 60)
                 print(f"Video loaded successfully: {file_path}")
             else:
@@ -251,42 +242,40 @@ class VideoProcessor:
             self.video_thread.stop()
 
     def process_single_image(self, image):
-        """Process a single image for license plate recognition"""
+
         if image is None:
             return None
 
-        # Resize image for processing
-        scale_percent = 30  # More aggressive resizing (30% instead of 50%)
+        scale_percent = 30
         width = int(image.shape[1] * scale_percent / 100)
         height = int(image.shape[0] * scale_percent / 100)
         dim = (width, height)
         small_image = cv2.resize(image, dim, interpolation=cv2.INTER_AREA)
 
-        # Create a copy for display
+
         display_image = image.copy()
 
-        # Detect license plates with YOLO
-        detected_plates = []  # Plates recognized in current image
+
+        detected_plates = []
 
         if self.yolo_model is not None:
             try:
-                # YOLO detection on smaller image
+
                 results = self.yolo_model(small_image, conf=0.4)
                 for result in results:
-                    # Scale boxes back to original image size
+
                     boxes = result.boxes.xyxy.cpu().numpy().astype(int)
-                    boxes = boxes * (100 / scale_percent)  # Scale back to original size
+                    boxes = boxes * (100 / scale_percent)
                     boxes = boxes.astype(int)
 
                     for box in boxes:
                         x1, y1, x2, y2 = box
-                        # Draw license plate box
+
                         cv2.rectangle(display_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-                        # Perform OCR if reader is available
+
                         if self.reader is not None:
                             try:
-                                # Check boundaries
                                 if y1 < 0: y1 = 0
                                 if x1 < 0: x1 = 0
                                 if y2 >= image.shape[0]: y2 = image.shape[0] - 1
@@ -294,12 +283,11 @@ class VideoProcessor:
 
                                 license_plate_img = image[y1:y2, x1:x2]
 
-                                # Only perform OCR if image is large enough
+
                                 if license_plate_img.size > 0 and license_plate_img.shape[0] > 15 and \
                                         license_plate_img.shape[1] > 50:
-                                    # Preprocessing
+
                                     gray = cv2.cvtColor(license_plate_img, cv2.COLOR_BGR2GRAY)
-                                    # Perform OCR
                                     ocr_result = self.reader.ocr(gray, cls=False)
 
                                     if ocr_result and len(ocr_result) > 0 and len(ocr_result[0]) > 0:
@@ -307,17 +295,17 @@ class VideoProcessor:
                                         confidence = ocr_result[0][0][1][1]
 
                                         if confidence > 0.5:
-                                            # Formázd a rendszámot
+
                                             text = self.format_license_plate(text)
 
-                                            # Only query database if this is a new plate
+
                                             if text not in self.recognized_plates:
-                                                # Database query
+
                                                 vehicle_data = self.vehicle_db.get_vehicle_data(text)
-                                                # Add to recognized plates
+
                                                 self.recognized_plates[text] = time.time()
 
-                                                # Add to detected plates list
+
                                                 detected_plates.append({
                                                     'text': text,
                                                     'confidence': confidence,
@@ -325,12 +313,12 @@ class VideoProcessor:
                                                     'vehicle_data': vehicle_data
                                                 })
 
-                                                # Save plate image
+
                                                 cv2.imwrite(f"plate_capture_{text}.jpg", license_plate_img)
                                                 print(
                                                     f"Mentve: plate_capture_{text}.jpg - Felismert szöveg: {text}, Megbízhatóság: {confidence}")
                                             else:
-                                                # Use cached vehicle data
+
                                                 vehicle_data = self.vehicle_db.vehicle_cache.get(text)
                                                 detected_plates.append({
                                                     'text': text,
@@ -341,7 +329,7 @@ class VideoProcessor:
                             except Exception as e:
                                 print(f"OCR error: {e}")
 
-                # Display plates and vehicle data on image
+
                 if detected_plates:
                     display_image = self.display_multiple_plates_on_image(display_image, detected_plates)
             except Exception as e:
@@ -350,15 +338,15 @@ class VideoProcessor:
         return display_image
 
     def display_multiple_plates_on_image(self, image, plates):
-        """Megjeleníti a felismert rendszámokat és járműadatokat a képen"""
+        #Megjeleníti a felismert rendszámokat és járműadatokat a képen
         if not plates:
             return image
 
         result_image = image.copy()
-        y_offset = 10  # Starting y position
+        y_offset = 10
 
         for i, plate_info in enumerate(plates):
-            # Display license plate
+
             result_image = self.draw_text_with_background(
                 result_image,
                 f"Rendszám #{i + 1}: {plate_info['text']}",
@@ -366,12 +354,12 @@ class VideoProcessor:
                 font_size=30,
                 text_color=(255, 255, 255),
                 bg_color=(0, 0, 0),
-                alpha=0.6  # 60% transparency
+                alpha=0.6
             )
 
             y_offset += 40
 
-            # Display vehicle data if available
+
             if plate_info['vehicle_data']:
                 vehicle_data = plate_info['vehicle_data']
                 result_image = self.draw_text_with_background(
@@ -413,7 +401,7 @@ class VideoProcessor:
                     alpha=0.6
                 )
 
-                y_offset += 40  # Larger spacing before next plate
+                y_offset += 40
 
         return result_image
 
@@ -421,30 +409,30 @@ class VideoProcessor:
         if frame is None:
             return None
 
-        # Resize image for processing
-        scale_percent = 80  # More aggressive resizing (30% instead of 50%)
+
+        scale_percent = 80
         width = int(frame.shape[1] * scale_percent / 100)
         height = int(frame.shape[0] * scale_percent / 100)
         dim = (width, height)
         small_frame = cv2.resize(frame, dim, interpolation=cv2.INTER_AREA)
 
-        # Create a copy for display only when necessary
+
         display_frame = frame.copy() if do_ocr else frame
 
-        # Clean up old recognitions (older than 60 seconds)
+
         current_time = time.time()
         plates_to_remove = []
         for plate, timestamp in self.recognized_plates.items():
-            if current_time - timestamp > 60:  # 60 seconds expiration
+            if current_time - timestamp > 60:
                 plates_to_remove.append(plate)
         for plate in plates_to_remove:
             del self.recognized_plates[plate]
 
-        # Display last recognized license plate at the top of the video
+
         if self.last_recognized_text:
-            # Black background for license plate text
+
             cv2.rectangle(display_frame, (10, 10), (450, 50), (0, 0, 0), -1)
-            # Write license plate with Unicode support
+
             display_frame = self.draw_text_with_unicode(
                 display_frame,
                 f"Rendszám: {self.last_recognized_text}",
@@ -453,11 +441,10 @@ class VideoProcessor:
                 color=(255, 255, 255)
             )
 
-            # Display vehicle data if available
+
             if self.vehicle_data:
-                # Larger black bar for data
                 cv2.rectangle(display_frame, (10, 50), (1000, 180), (0, 0, 0), -1)
-                # Write data with Unicode support
+
                 display_frame = self.draw_text_with_unicode(
                     display_frame,
                     f"Üzembentartó: {self.vehicle_data['uzembentarto']}",

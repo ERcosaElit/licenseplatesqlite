@@ -13,13 +13,13 @@ class ManualLicensePlateDialog(QDialog):
         self.setup_ui()
 
     def open_manual_dialog(self):
-        """Kézi rendszám beviteli ablak megnyitása"""
-        from manual import ManualLicensePlateDialog  # Relatív importálás a jelenlegi mappából
+        #Kézi rendszám beviteli ablak megnyitása
+        from manual import ManualLicensePlateDialog
         dialog = ManualLicensePlateDialog(self)
         dialog.exec_()
 
     def setup_ui(self):
-        """Felhasználói felület beállítása"""
+        #Felhasználói felület beállítása
         self.setWindowTitle("Rendszám Kézi Bevitele")
         self.setGeometry(300, 300, 600, 400)
 
@@ -52,7 +52,7 @@ class ManualLicensePlateDialog(QDialog):
 
         # Táblázat az adatok megjelenítéséhez
         self.data_table = QTableWidget(0, 2)  # 0 sor, 2 oszlop
-        self.data_table.setHorizontalHeaderLabels(["Tulajdonság", "Érték"])
+        self.data_table.setHorizontalHeaderLabels(["Tulajdonság", "Eredmény"])
         self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         main_layout.addWidget(self.data_table)
 
@@ -62,7 +62,7 @@ class ManualLicensePlateDialog(QDialog):
         main_layout.addWidget(self.close_button)
 
     def search_license_plate(self):
-        """Rendszám keresése az adatbázisban"""
+        #Rendszám keresése az adatbázisban
         license_plate = self.license_plate_input.text().strip()
         if not license_plate:
             QMessageBox.warning(self, "Figyelmeztetés", "Kérem adjon meg egy rendszámot!")
@@ -84,7 +84,7 @@ class ManualLicensePlateDialog(QDialog):
                                     f"A(z) {license_plate} rendszámú jármű nem található az adatbázisban.")
 
     def display_vehicle_data(self, vehicle_data):
-        """Járműadatok megjelenítése a táblázatban"""
+        #Járműadatok megjelenítése a táblázatban
         # Táblázat ürítése
         self.data_table.setRowCount(0)
 
@@ -109,7 +109,7 @@ class ManualLicensePlateDialog(QDialog):
             self.data_table.setItem(i, 1, QTableWidgetItem(str(value)))
 
     def closeEvent(self, event):
-        """Ablak bezárásakor megszakítjuk az adatbázis kapcsolatot"""
+        #Ablak bezárásakor megszűnik az adatbázis kapcsolat
         self.vehicle_db.disconnect()
         event.accept()
 

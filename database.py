@@ -30,7 +30,7 @@ class VehicleDatabase:
         pass  # Minden kapcsolat automatikusan lezárul a get_vehicle_data() metódusban
 
     def get_vehicle_data(self, license_plate):
-        """Jármű adatok lekérdezése rendszám alapján"""
+        #ármű adatok lekérdezése rendszám alapján
         # Ellenőrizzük a gyorsítótárat
         with self.lock:
             if license_plate in self.vehicle_cache:
