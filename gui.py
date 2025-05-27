@@ -129,7 +129,7 @@ class VideoLicensePlateGUI(QMainWindow):
 
                 self.display_image(image)
 
-                # Képfeldolgozása
+                # Kép feldolgozása
                 if self.image_processing_thread is not None and self.image_processing_thread.isRunning():
                     self.image_processing_thread.terminate()
                     self.image_processing_thread.wait()
@@ -177,7 +177,7 @@ class VideoLicensePlateGUI(QMainWindow):
     def toggle_play(self):
 
         if self.video_processor.video_thread and self.video_processor.video_thread.isRunning():
-            # Stop playback
+
             self.video_processor.stop_processing()
             self.play_button.setText("Lejátszás")
             self.statusBar().showMessage("Lejátszás leállítva")
