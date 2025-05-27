@@ -14,10 +14,9 @@ class VehicleDatabase:
 
         self.db_path = os.path.join(base_path, "adatbazis2.db")
         self.vehicle_cache = {}  # Gyorsítótár a jármű adatokhoz
-        self.lock = threading.Lock()  # Zárolás a többszálú hozzáféréshez
+        self.lock = threading.Lock()
 
     def connect(self):
-        """Új kapcsolat létrehozása az SQLite adatbázishoz"""
         try:
             conn = sqlite3.connect(self.db_path)
             return conn
@@ -26,8 +25,7 @@ class VehicleDatabase:
             return None
 
     def disconnect(self):
-        """Üres metódus a kompatibilitás miatt"""
-        pass  # Minden kapcsolat automatikusan lezárul a get_vehicle_data() metódusban
+        pass  # Minden kapcsolat automatikusan lezárul
 
     def get_vehicle_data(self, license_plate):
         #ármű adatok lekérdezése rendszám alapján
@@ -37,7 +35,6 @@ class VehicleDatabase:
                 print(f"Találat a gyorsítótárban: {license_plate}")
                 return self.vehicle_cache[license_plate]
 
-        # Új kapcsolat létrehozása minden lekérdezéshez
         conn = self.connect()
         if not conn:
             print("Nem sikerült kapcsolódni az adatbázishoz!")

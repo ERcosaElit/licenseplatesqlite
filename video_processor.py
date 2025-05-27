@@ -114,7 +114,7 @@ class VideoProcessor:
 
         self.recognized_plates = {}
 
-        # Load font
+
         try:
             font_path = "C:\\Windows\\Fonts\\arial.ttf"
             if os.path.exists(font_path):
@@ -144,7 +144,7 @@ class VideoProcessor:
         return text
 
     def draw_text_with_unicode(self, img, text, position, font_size=20, color=(255, 255, 255)):
-        #Ékezetes szöveget rajzol a képre PIL segítségével
+        #Ékezetes szöveget ír a képre PIL segítségével
         pil_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
         draw = ImageDraw.Draw(pil_img)
 
@@ -156,7 +156,7 @@ class VideoProcessor:
 
     def draw_text_with_background(self, img, text, position, font_size=20, text_color=(255, 255, 255),
                                   bg_color=(0, 0, 0), alpha=0.6):
-        #Szöveget rajzol a képre átlátszó háttérrel
+        #Szöveget ír a képre átlátszó háttérrel
 
         overlay = img.copy()
 
@@ -475,23 +475,23 @@ class VideoProcessor:
 
         if self.yolo_model is not None:
             try:
-                # YOLO detection on smaller frame
+
                 results = self.yolo_model(small_frame, conf=0.4)
                 for result in results:
-                    # Scale correction for detected boxes
+
                     boxes = result.boxes.xyxy.cpu().numpy().astype(int)
-                    boxes = boxes * (100 / scale_percent)  # Scale back to original size
+                    boxes = boxes * (100 / scale_percent)
                     boxes = boxes.astype(int)
 
                     for box in boxes:
                         x1, y1, x2, y2 = box
-                        # Draw license plate box
+
                         cv2.rectangle(display_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-                        # OCR only if necessary
+
                         if do_ocr and self.reader is not None:
                             try:
-                                # Check boundaries before cropping
+
                                 if y1 < 0: y1 = 0
                                 if x1 < 0: x1 = 0
                                 if y2 >= frame.shape[0]: y2 = frame.shape[0] - 1
@@ -499,12 +499,12 @@ class VideoProcessor:
 
                                 license_plate_img = frame[y1:y2, x1:x2]
 
-                                # Only perform OCR if image is large enough
+
                                 if license_plate_img.size > 0 and license_plate_img.shape[0] > 15 and \
                                         license_plate_img.shape[1] > 50:
-                                    # Simplified preprocessing
+
                                     gray = cv2.cvtColor(license_plate_img, cv2.COLOR_BGR2GRAY)
-                                    # Perform OCR
+
                                     ocr_result = self.reader.ocr(gray, cls=False)
 
                                     if ocr_result and len(ocr_result) > 0 and len(ocr_result[0]) > 0:
@@ -512,19 +512,19 @@ class VideoProcessor:
                                         confidence = ocr_result[0][0][1][1]
 
                                         if confidence > 0.5:
-                                            # Formázd a rendszámot
+
                                             text = self.format_license_plate(text)
 
-                                            # Check if this is a new license plate
+
                                             if text not in self.recognized_plates:
                                                 print(f"New license plate detected: {text}")
-                                                # Add to recognized plates with current timestamp
+
                                                 self.recognized_plates[text] = current_time
-                                                # Update the last recognized text
+
                                                 self.last_recognized_text = text
-                                                # Database query - only happens once per new plate
+
                                                 self.vehicle_data = self.vehicle_db.get_vehicle_data(text)
-                                                # Save the plate image once
+
                                                 if not os.path.exists(f"plate_capture_{text}.jpg"):
                                                     cv2.imwrite(f"plate_capture_{text}.jpg", license_plate_img)
                                                     print(
@@ -534,7 +534,7 @@ class VideoProcessor:
             except Exception as e:
                 print(f"YOLO error: {e}")
 
-        # Clean up any large temporary variables
+
         if 'license_plate_img' in locals():
             del license_plate_img
         if 'gray' in locals():

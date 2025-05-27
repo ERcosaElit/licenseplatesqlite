@@ -104,11 +104,7 @@ class VideoLicensePlateGUI(QMainWindow):
             self.video_file_path = file_path
             self.file_path_label.setText(os.path.basename(file_path))
             self.statusBar().showMessage(f"Videó betöltve: {os.path.basename(file_path)}")
-
-            # Reset processor state
             self.video_processor.reset()
-
-            # Load the video
             if self.video_processor.load_video(file_path):
                 self.play_button.setEnabled(True)
             else:
@@ -116,7 +112,6 @@ class VideoLicensePlateGUI(QMainWindow):
                 self.play_button.setEnabled(False)
 
     def browse_image(self):
-        """Open file dialog to select an image file"""
         file_path, _ = QFileDialog.getOpenFileName(
             self, "Kép kiválasztása", "", "Image Files (*.jpg *.jpeg *.png *.bmp)"
         )
@@ -154,7 +149,7 @@ class VideoLicensePlateGUI(QMainWindow):
             self.statusBar().showMessage("Kép feldolgozása befejezve")
 
     def display_image(self, image):
-        """Display the image with proper scaling when window is resized"""
+
         if image is None:
             return
 
@@ -230,12 +225,10 @@ class VideoLicensePlateGUI(QMainWindow):
         if self.current_image is not None:
             self.display_image(self.current_image)
 
-        # Call the parent class resizeEvent
         super().resizeEvent(event)
 
     def closeEvent(self, event):
 
-        # Stop all threads before closing
         if self.image_processing_thread is not None and self.image_processing_thread.isRunning():
             self.image_processing_thread.terminate()
             self.image_processing_thread.wait()

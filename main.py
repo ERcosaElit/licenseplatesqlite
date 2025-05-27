@@ -3,7 +3,6 @@ from PyQt5.QtWidgets import QApplication
 from gui import VideoLicensePlateGUI
 
 def main():
-    """Main entry point for the license plate recognition application"""
     app = QApplication(sys.argv)
     window = VideoLicensePlateGUI()
     window.show()

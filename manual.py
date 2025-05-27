@@ -1,8 +1,9 @@
 import sys
+
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QPushButton,
                              QLabel, QLineEdit, QMessageBox, QTableWidget,
                              QTableWidgetItem, QHeaderView, QApplication)
-from PyQt5.QtCore import Qt
+
 from database import VehicleDatabase
 
 
